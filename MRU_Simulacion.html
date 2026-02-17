@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulación MRU - Física Vectorial</title>
+    <!-- Google Fonts for premium feel -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --panel-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --accent-primary: #3b82f6;
+            /* Blue for Position */
+            --accent-secondary: #10b981;
+            /* Green for Velocity */
+            --accent-displacement: #f59e0b;
+            /* Orange for Displacement */
+            --accent-r0: #8b5cf6;
+            /* Purple for r0 */
+            --accent-rf: #ec4899;
+            /* Pink for rf */
+            --border: #334155;
+            --font-main: 'Outfit', sans-serif;
+            --font-code: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Modern Header */
+        header {
+            background-color: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            letter-spacing: -0.025em;
+            background: linear-gradient(to right, #60a5fa, #34d399);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Main Grid Layout */
+        .layout {
+            display: grid;
+            grid-template-columns: 320px 1fr 320px;
+            grid-template-rows: 1fr;
+            flex: 1;
+            height: calc(100vh - 60px);
+        }
+
+        /* Panels */
+        .panel {
+            background-color: var(--panel-bg);
+            border-right: 1px solid var(--border);
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .panel-right {
+            border-right: none;
+            border-left: 1px solid var(--border);
+        }
+
+        .viewport {
+            position: relative;
+            background-color: #020617;
+            /* Darker than bg for canvas contrast */
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* Grid background effect */
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        /* Controls styling */
+        .control-group {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .control-header {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-dim);
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+
+        .input-row {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 0.75rem;
+        }
+
+        .input-label-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.25rem;
+        }
+
+        .slider-val {
+            font-family: var(--font-code);
+            font-size: 0.85rem;
+            color: var(--accent-primary);
+        }
+
+        label {
+            font-size: 0.9rem;
+            color: var(--text-main);
+        }
+
+        /* Sliders */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 4px;
+            background: #475569;
+            border-radius: 2px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: #60a5fa;
+        }
+
+        /* Custom thumb colors for different inputs */
+        #tTotal::-webkit-slider-thumb {
+            background: #facc15;
+        }
+
+        #xf::-webkit-slider-thumb,
+        #yf::-webkit-slider-thumb {
+            background: var(--accent-rf);
+        }
+
+        #x0::-webkit-slider-thumb,
+        #y0::-webkit-slider-thumb {
+            background: var(--accent-r0);
+        }
+
+
+        /* Buttons */
+        .btn-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        button {
+            padding: 0.6rem;
+            border-radius: 6px;
+            border: none;
+            font-family: var(--font-mian);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--accent-primary);
+            color: white;
+            grid-column: span 2;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-secondary {
+            background: var(--border);
+            color: var(--text-main);
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+        }
+
+        /* Vectors Legend */
+        .vector-legend {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-dim);
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        /* Data Display */
+        .data-display {
+            font-family: var(--font-code);
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        .data-label {
+            color: var(--text-dim);
+        }
+
+        .data-val {
+            text-align: right;
+            color: var(--accent-primary);
+        }
+
+        /* Graph Containers */
+        .graph-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 10px;
+            height: 200px;
+            position: relative;
+        }
+
+        .graph-title {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            pointer-events: none;
+        }
+
+        canvas.graph {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>Simulación MRU <span style="font-weight: 300; opacity: 0.7;">| Vectores y Gráficas</span></h1>
+        <div style="font-size: 0.85rem; color: var(--text-dim);">Física Interactiva</div>
+    </header>
+
+    <div class="layout">
+        <!-- Left: Controls -->
+        <div class="panel">
+            <div class="control-group">
+                <div class="control-header" style="color: var(--accent-r0)">Posición Inicial (r₀)</div>
+                <div class="input-row">
+                    <div class="input-label-row">
+                        <label>x₀ (m)</label>
+                        <span class="slider-val" id="val_x0">-100</span>
+                    </div>
+                    <input type="range" id="x0" min="-200" max="200" value="-100" step="10">
+                </div>
+                <div class="input-row">
+                    <div class="input-label-row">
+                        <label>y₀ (m)</label>
+                        <span class="slider-val" id="val_y0">-50</span>
+                    </div>
+                    <input type="range" id="y0" min="-200" max="200" value="-50" step="10">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="control-header" style="color: var(--accent-rf)">Posición Final (rf)</div>
+                <div class="input-row">
+                    <div class="input-label-row">
+                        <label>xf (m)</label>
+                        <span class="slider-val" id="val_xf">100</span>
+                    </div>
+                    <input type="range" id="xf" min="-200" max="200" value="100" step="10">
+                </div>
+                <div class="input-row">
+                    <div class="input-label-row">
+                        <label>yf (m)</label>
+                        <span class="slider-val" id="val_yf">50</span>
+                    </div>
+                    <input type="range" id="yf" min="-200" max="200" value="50" step="10">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="control-header" style="color: #facc15">Tiempo Total</div>
+                <div class="input-row">
+                    <div class="input-label-row">
+                        <label>t (s)</label>
+                        <span class="slider-val" id="val_tTotal">5.0</span>
+                    </div>
+                    <input type="range" id="tTotal" min="1" max="20" value="5" step="0.5">
+                </div>
+            </div>
+
+            <div class="btn-container">
+                <button class="btn-primary" id="startStopBtn">
+                    <span id="playIcon">▶</span> Iniciar / Pausa
+                </button>
+                <button class="btn-secondary" id="resetBtn">⏮ Reset</button>
+            </div>
+
+            <div class="control-group">
+                <div class="control-header">Leyenda</div>
+                <div class="vector-legend">
+                    <div class="legend-item">
+                        <div class="dot" style="background: var(--accent-r0);"></div>Posición Inicial (r₀)
+                    </div>
+                    <div class="legend-item">
+                        <div class="dot" style="background: var(--accent-rf);"></div>Posición Final (rf)
+                    </div>
+                    <div class="legend-item">
+                        <div class="dot" style="background: var(--accent-primary);"></div>Posición Actual (r)
+                    </div>
+                    <div class="legend-item">
+                        <div class="dot" style="background: var(--accent-displacement);"></div>Desplazamiento (Δr)
+                    </div>
+                    <div class="legend-item">
+                        <div class="dot" style="background: var(--accent-secondary);"></div>Velocidad Media (vm)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center: Simulation Viewport -->
+        <div class="viewport" id="viewport">
+            <canvas id="simCanvas"></canvas>
+        </div>
+
+        <!-- Right: Graphs & Data -->
+        <div class="panel panel-right">
+            <div class="control-group">
+                <div class="control-header">Cálculos</div>
+                <div class="data-display">
+                    <span class="data-label">Distancia Recorrida (|Δr|):</span>
+                    <span class="data-val" id="dispVal">0.00 m</span>
+
+                    <span class="data-label">Velocidad Media (vm):</span>
+                    <span class="data-val" id="vAvgVal">0.00 m/s</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="control-header">Tiempo Real</div>
+                <div class="data-display">
+                    <span class="data-label">Tiempo (t):</span>
+                    <span class="data-val" id="tVal" style="color: #fff; font-weight: bold;">0.00 s</span>
+
+
+                </div>
+            </div>
+
+            <div class="graph-container">
+                <div class="graph-title">Posición X vs Tiempo</div>
+                <canvas id="posGraph" class="graph"></canvas>
+            </div>
+
+            <div class="graph-container">
+                <div class="graph-title">Posición Y vs Tiempo</div>
+                <canvas id="posYGraph" class="graph"></canvas>
+            </div>
+
+            <div class="graph-container">
+                <div class="graph-title">Velocidad (Magnitud) vs Tiempo</div>
+                <canvas id="velGraph" class="graph"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * MRU Simulation Logic - Target Based
+         */
+
+        // --- Configuration ---
+        const CONFIG = {
+            pixelsPerMeter: 1.2, // Visual scale
+            timeStep: 1 / 60,
+            colors: {
+                r0: '#8b5cf6',
+                rf: '#ec4899',
+                r: '#3b82f6',
+                dr: '#f59e0b',
+                v: '#10b981',
+                grid: '#1e293b',
+                axis: '#475569',
+                text: '#e2e8f0'
+            }
+        };
+
+        // --- State ---
+        const state = {
+            running: false,
+            finished: false,
+            t: 0,
+            // Inputs
+            x0: -100,
+            y0: -50,
+            xf: 100,
+            yf: 50,
+            tTotal: 5.0,
+            // Calculation results
+            vx: 0,
+            vy: 0,
+            dr: 0,
+            vMag: 0,
+            // Current values
+            x: -100,
+            y: -50,
+            // Graph data
+            historyT: [],
+            historyPos: [],
+            historyPosY: [],
+            historyVel: []
+        };
+
+        // --- Elements ---
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const posGraphCanvas = document.getElementById('posGraph');
+        const posGraphCtx = posGraphCanvas.getContext('2d');
+        const posYGraphCanvas = document.getElementById('posYGraph');
+        const posYGraphCtx = posYGraphCanvas.getContext('2d');
+        const velGraphCanvas = document.getElementById('velGraph');
+        const velGraphCtx = velGraphCanvas.getContext('2d');
+
+        // Inputs
+        const sliders = {
+            x0: document.getElementById('x0'),
+            y0: document.getElementById('y0'),
+            xf: document.getElementById('xf'),
+            yf: document.getElementById('yf'),
+            tTotal: document.getElementById('tTotal')
+        };
+
+        const labels = {
+            x0: document.getElementById('val_x0'),
+            y0: document.getElementById('val_y0'),
+            xf: document.getElementById('val_xf'),
+            yf: document.getElementById('val_yf'),
+            tTotal: document.getElementById('val_tTotal')
+        };
+
+        // Display
+        const tVal = document.getElementById('tVal');
+
+        const dispVal = document.getElementById('dispVal');
+        const vAvgVal = document.getElementById('vAvgVal');
+
+        // --- Initialization ---
+        function init() {
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            // Listeners
+            document.getElementById('startStopBtn').addEventListener('click', toggleSim);
+            document.getElementById('resetBtn').addEventListener('click', resetSim);
+
+            // Slider listeners
+            Object.keys(sliders).forEach(key => {
+                sliders[key].addEventListener('input', (e) => {
+                    labels[key].textContent = e.target.value;
+                    updateStateFromInputs();
+                });
+            });
+
+            // Initial setup
+            updateStateFromInputs();
+            draw();
+            drawGraphs();
+        }
+
+        function resizeCanvas() {
+            const viewport = document.getElementById('viewport');
+            canvas.width = viewport.clientWidth;
+            canvas.height = viewport.clientHeight;
+
+            posGraphCanvas.width = posGraphCanvas.parentElement.clientWidth;
+            posGraphCanvas.height = posGraphCanvas.parentElement.clientHeight;
+
+            posYGraphCanvas.width = posYGraphCanvas.parentElement.clientWidth;
+            posYGraphCanvas.height = posYGraphCanvas.parentElement.clientHeight;
+
+            velGraphCanvas.width = velGraphCanvas.parentElement.clientWidth;
+            velGraphCanvas.height = velGraphCanvas.parentElement.clientHeight;
+
+            draw();
+            drawGraphs();
+        }
+
+        function updateStateFromInputs() {
+            // Only update initial/final positions if not running (or allow live update but reset current?)
+            // If simulation is running, changing targets might be weird. Let's allowing "live" update of targets
+            // but it changes the trajectory immediately.
+
+            state.x0 = parseFloat(sliders.x0.value);
+            state.y0 = parseFloat(sliders.y0.value);
+            state.xf = parseFloat(sliders.xf.value);
+            state.yf = parseFloat(sliders.yf.value);
+            state.tTotal = parseFloat(sliders.tTotal.value);
+
+            // Recalculate kinematics
+            const dx = state.xf - state.x0;
+            const dy = state.yf - state.y0;
+            state.dr = Math.sqrt(dx * dx + dy * dy);
+
+            if (state.tTotal > 0) {
+                state.vx = dx / state.tTotal;
+                state.vy = dy / state.tTotal;
+                state.vMag = state.dr / state.tTotal;
+            } else {
+                state.vx = 0; state.vy = 0; state.vMag = 0;
+            }
+
+            // Update current position based on current t
+            // If t is changing, we follow the trajectory
+            updatePhysics(0); // 0 dt, just update pos
+
+            updateUI();
+            draw();
+
+            // If t=0, reset graphs to match new config potentially? 
+            // Or if we are editing initial config, clear graphs.
+            if (state.t === 0) {
+                clearGraphs();
+                // Pre-seed graph with t=0 point
+                state.historyT = [0];
+                state.historyPos = [state.x0];
+                state.historyPosY = [state.y0];
+                state.historyVel = [state.vMag];
+                drawGraphs();
+            }
+        }
+
+        function updatePhysics(dt) {
+            // Enforce time bounds
+            if (state.t >= state.tTotal) {
+                state.t = state.tTotal;
+                state.finished = true;
+                state.running = false;
+            }
+
+            // Calculate position at time t (Interpolation)
+            // r(t) = r0 + v * t
+            state.x = state.x0 + state.vx * state.t;
+            state.y = state.y0 + state.vy * state.t;
+        }
+
+        function toggleSim() {
+            if (state.finished) {
+                resetSim(); // Auto reset if finished
+                state.running = true;
+                loop();
+                return;
+            }
+            state.running = !state.running;
+            if (state.running) {
+                lastTime = performance.now();
+                loop();
+            }
+            updateUI();
+        }
+
+        function resetSim() {
+            state.running = false;
+            state.finished = false;
+            state.t = 0;
+
+            clearGraphs();
+            updateStateFromInputs(); // Reset pos to x0
+
+            updateUI();
+            draw();
+            drawGraphs();
+        }
+
+        function clearGraphs() {
+            state.historyT = [];
+            state.historyPos = [];
+            state.historyPosY = [];
+            state.historyVel = [];
+        }
+
+        let lastTime = 0;
+        function loop(timestamp) {
+            if (!state.running) return;
+            if (!timestamp) timestamp = performance.now();
+
+            // Calculate dt
+            const dt = (timestamp - lastTime) / 1000;
+            lastTime = timestamp;
+
+            // Cap dt to avoid jumps
+            const safeDt = Math.min(dt, 0.1);
+
+            state.t += safeDt;
+            updatePhysics(safeDt);
+
+            // Record Graph Data
+            // Don't record every frame if speed is high, but here total time is short (20s).
+            // 60Hz is fine.
+            state.historyT.push(state.t);
+            // Use X as Position for Graph (Signed)
+            state.historyPos.push(state.x);
+            state.historyPosY.push(state.y);
+            state.historyVel.push(state.vMag); // Constant velocity
+
+            draw();
+            drawGraphs();
+            updateUI();
+
+            if (state.running) {
+                requestAnimationFrame(loop);
+            }
+        }
+
+        // --- Visualization ---
+        function toCanvas(x, y) {
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            return {
+                x: cx + x * CONFIG.pixelsPerMeter,
+                y: cy - y * CONFIG.pixelsPerMeter
+            };
+        }
+
+        function draw() {
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+
+            // Auto-scale check (optional, but let's stick to fixed scale 1.2 for now as sliders are limited to +/- 200)
+            // If viewport is small, 200m might be offscreen.
+            const maxCoord = Math.max(Math.abs(state.x0), Math.abs(state.xf), Math.abs(state.y0), Math.abs(state.yf));
+            // Ensure maxCoord fits
+            const minDim = Math.min(canvas.width, canvas.height) / 2 - 50;
+            if (maxCoord > 0) {
+                const desiredScale = minDim / maxCoord;
+                CONFIG.pixelsPerMeter = Math.min(Math.max(desiredScale, 0.5), 2.0); // Clamp
+            }
+
+            drawGrid(ctx, cx, cy, CONFIG.pixelsPerMeter);
+
+            const start = toCanvas(state.x0, state.y0);
+            const end = toCanvas(state.xf, state.yf);
+            const current = toCanvas(state.x, state.y);
+            const origin = toCanvas(0, 0);
+
+            // 1. Path Line (Dotted from Start to End)
+            ctx.save();
+            ctx.strokeStyle = '#334155';
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(start.x, start.y);
+            ctx.lineTo(end.x, end.y);
+            ctx.stroke();
+            ctx.restore();
+
+            // 2. Vectors
+            // r0 (Initial)
+            drawVector(ctx, origin.x, origin.y, start.x - origin.x, start.y - origin.y, CONFIG.colors.r0, "r₀");
+
+            // rf (Final) - Ghost or just vector? Requested "Vectors initial and final".
+            drawVector(ctx, origin.x, origin.y, end.x - origin.x, end.y - origin.y, CONFIG.colors.rf, "rf");
+
+            // r (Current) - REMOVED per user request
+            // drawVector(ctx, origin.x, origin.y, current.x - origin.x, current.y - origin.y, CONFIG.colors.r, "r");
+
+            // Delta r (Displacement) - From Start to Current (Growing) or Total?
+            // Usually "Displacement" in MRU context implies the vector traveled so far, OR the total displacement.
+            // Let's show the *current* displacement from origin of motion.
+            drawVector(ctx, start.x, start.y, current.x - start.x, current.y - start.y, CONFIG.colors.dr, "Δr");
+
+            // 3. Car
+            const angle = Math.atan2(state.vy, state.vx);
+            drawCar(ctx, current.x, current.y, angle);
+
+            // 4. Velocity Vector (Attached to car)
+            // Visual scale: let's make it proportional but capped?
+            // Or just fixed length for "direction"?
+            // Let's use physics scale * factor
+            const vScale = 1.0 * CONFIG.pixelsPerMeter;
+            // If v is 0 (t=0 specified?), check
+            if (state.tTotal > 0.1) {
+                const vxPx = state.vx * vScale; // 1s visual length
+                const vyPx = -state.vy * vScale;
+                drawVector(ctx, current.x, current.y, vxPx, vyPx, CONFIG.colors.v, "vm");
+            }
+        }
+
+        function drawGrid(ctx, cx, cy, scale) {
+            ctx.save();
+            ctx.strokeStyle = CONFIG.colors.grid;
+            ctx.lineWidth = 1;
+
+            const w = canvas.width;
+            const h = canvas.height;
+            const gridSize = 50 * scale; // 50m grid
+
+            // Verticals
+            for (let x = cx % gridSize; x < w; x += gridSize) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+            }
+            // Horizontals
+            for (let y = cy % gridSize; y < h; y += gridSize) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+            }
+
+            // Axes
+            ctx.strokeStyle = CONFIG.colors.axis;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, cy); ctx.lineTo(w, cy);
+            ctx.moveTo(cx, 0); ctx.lineTo(cx, h);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawVector(ctx, x, y, dx, dy, color, label) {
+            if (Math.abs(dx) < 2 && Math.abs(dy) < 2) return;
+
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = 2;
+
+            const headLen = 10;
+            const angle = Math.atan2(dy, dx);
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + dx, y + dy);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x + dx, y + dy);
+            ctx.lineTo(x + dx - headLen * Math.cos(angle - Math.PI / 6), y + dy - headLen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(x + dx - headLen * Math.cos(angle + Math.PI / 6), y + dy - headLen * Math.sin(angle + Math.PI / 6));
+            ctx.fill();
+
+            if (label) {
+                ctx.font = "bold 12px 'JetBrains Mono'";
+                ctx.fillText(label, x + dx + 10, y + dy + 10);
+            }
+            ctx.restore();
+        }
+
+        function drawCar(ctx, x, y, angle) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(-angle); // Canvas Y inverted
+
+            // Glow
+            ctx.shadowColor = 'rgba(250, 204, 21, 0.4)';
+            ctx.shadowBlur = 15;
+
+            // Body
+            ctx.fillStyle = '#facc15';
+            roundRect(ctx, -20, -12, 40, 24, 5);
+            ctx.fill();
+
+            // Window
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#1e293b';
+            roundRect(ctx, -5, -10, 16, 20, 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function roundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.arcTo(x + w, y, x + w, y + h, r);
+            ctx.arcTo(x + w, y + h, x, y + h, r);
+            ctx.arcTo(x, y + h, x, y, r);
+            ctx.arcTo(x, y, x + w, y, r);
+            ctx.closePath();
+        }
+
+        // --- Graphing ---
+        function drawGraphs() {
+            // Pos vs Time -> Plot X coordinate (Signed)
+            drawGraph(posGraphCtx, state.historyT, state.historyPos, CONFIG.colors.r, "t (s)", "Posición X (m)", state.tTotal);
+            // Pos Y vs Time
+            drawGraph(posYGraphCtx, state.historyT, state.historyPosY, CONFIG.colors.r, "t (s)", "Posición Y (m)", state.tTotal);
+            // Vel vs Time -> Plot Velocity Magnitude
+            drawGraph(velGraphCtx, state.historyT, state.historyVel, CONFIG.colors.v, "t (s)", "|v| (m/s)", state.tTotal);
+        }
+
+        function drawGraph(ctx, xData, yData, color, xLabel, yLabel, maxX) {
+            const w = ctx.canvas.width;
+            const h = ctx.canvas.height;
+            ctx.clearRect(0, 0, w, h);
+
+            const padLeft = 40; // Increased for negative signs
+            const padRight = 20;
+            const padTop = 20;
+            const padBottom = 20;
+
+            const gW = w - padLeft - padRight;
+            const gH = h - padTop - padBottom;
+
+            // Determine Scales
+            const xMax = Math.max(maxX, 1);
+            const xScale = gW / xMax;
+
+            let yMin = Math.min(0, ...yData);
+            let yMax = Math.max(0, ...yData);
+
+            // Add padding to range
+            const rangeY = yMax - yMin;
+            if (rangeY === 0) {
+                yMin -= 10; yMax += 10;
+            } else {
+                yMin -= rangeY * 0.1;
+                yMax += rangeY * 0.1;
+            }
+
+            const yScale = gH / (yMax - yMin);
+
+            // Helper to map Physics Y to Canvas Y
+            const mapY = (val) => {
+                return padTop + gH - (val - yMin) * yScale;
+            }
+
+            // Helper map X
+            const mapX = (val) => {
+                return padLeft + val * xScale;
+            }
+
+            // Draw Axes
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 1;
+
+            // Y Axis line (at x=0)
+            ctx.beginPath();
+            ctx.moveTo(padLeft, padTop);
+            ctx.lineTo(padLeft, h - padBottom);
+            ctx.stroke();
+
+            // X Axis line (at y=0)
+            const yZero = mapY(0);
+            // Only draw if within bounds
+            if (yZero >= padTop && yZero <= h - padBottom) {
+                ctx.strokeStyle = '#64748b'; // Lighter for zero line
+                ctx.beginPath();
+                ctx.moveTo(padLeft, yZero);
+                ctx.lineTo(w - padRight, yZero);
+                ctx.stroke();
+            } else {
+                // Draw axis at bottom if 0 is not in view (e.g. all positive high values)
+                ctx.strokeStyle = '#334155';
+                ctx.beginPath();
+                ctx.moveTo(padLeft, h - padBottom);
+                ctx.lineTo(w - padRight, h - padBottom);
+                ctx.stroke();
+            }
+
+            // Plot Data
+            if (xData.length > 0) {
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                for (let i = 0; i < xData.length; i++) {
+                    const px = mapX(xData[i]);
+                    const py = mapY(yData[i]);
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
+                ctx.stroke();
+
+                // Area? Only if sensible (to 0 axis)
+                // Complex to allow transparency area to crossing 0 line. 
+                // Let's skip fill for cleaner line graph with negative support.
+            }
+
+            // Labels
+            ctx.fillStyle = CONFIG.colors.text;
+            ctx.font = '10px sans-serif';
+
+            // X Label
+            ctx.textAlign = 'center';
+            ctx.fillText(xLabel, w / 2, h - 5);
+            ctx.fillText(xMax.toFixed(1), w - padRight, h - 5);
+
+            // Y Label
+            ctx.save();
+            ctx.translate(10, h / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            ctx.fillText(yLabel, 0, 0);
+            ctx.restore();
+
+            // Values on Y axis (Max, Min, Zero)
+            ctx.textAlign = 'right';
+            ctx.fillText(yMax.toFixed(0), padLeft - 5, padTop + 5);
+            ctx.fillText(yMin.toFixed(0), padLeft - 5, h - padBottom);
+            if (yMin < 0 && yMax > 0) {
+                ctx.fillText("0", padLeft - 5, yZero + 3);
+            }
+        }
+
+        function updateUI() {
+            tVal.textContent = state.t.toFixed(2) + " s";
+
+
+            dispVal.textContent = state.dr.toFixed(2) + " m";
+            vAvgVal.textContent = state.vMag.toFixed(2) + " m/s";
+
+            // Optimize button update - only change if state changed
+            const btnText = document.getElementById('startStopBtn');
+            const currentMode = state.running ? 'running' : (state.finished ? 'finished' : 'stopped');
+
+            if (btnText.dataset.mode !== currentMode) {
+                btnText.dataset.mode = currentMode;
+                if (state.running) {
+                    btnText.innerHTML = '<span>⏸</span> Pausar';
+                    btnText.style.background = '#eab308';
+                } else if (state.finished) {
+                    btnText.innerHTML = '<span>↺</span> Reiniciar';
+                    btnText.style.background = '#10b981';
+                } else {
+                    btnText.innerHTML = '<span>▶</span> Iniciar';
+                    btnText.style.background = ''; // Revert
+                }
+            }
+        }
+
+        init();
+
+    </script>
+</body>
+
+</html>

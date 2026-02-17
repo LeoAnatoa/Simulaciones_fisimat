@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulación MCUV - Física Interactiva</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --panel-bg: #1E1E1E;
+            --text-color: #E0E0E0;
+            --accent-green: #00FF00;
+            --accent-blue: #00BFFF;
+            --accent-red: #FF4500;
+            --accent-yellow: #FFD700;
+            --border-color: #333;
+            --font-main: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --font-mono: 'Consolas', 'Monaco', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            background-color: var(--panel-bg);
+            padding: 10px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            color: var(--text-color);
+            font-weight: 500;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr 280px;
+            grid-template-rows: 1fr;
+            height: calc(100vh - 50px);
+            gap: 1px;
+            background-color: var(--border-color);
+            /* Grid lines */
+        }
+
+        .panel {
+            background-color: var(--bg-color);
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .center-panel {
+            grid-column: 2;
+            grid-row: 1;
+            background-color: #000;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .left-panel {
+            grid-column: 1;
+            grid-row: 1;
+            background-color: var(--panel-bg);
+            border-right: 1px solid var(--border-color);
+        }
+
+        .right-panel {
+            grid-column: 3;
+            grid-row: 1;
+            background-color: var(--panel-bg);
+            border-left: 1px solid var(--border-color);
+        }
+
+        .bottom-panel {
+            grid-column: 2;
+            grid-row: 2;
+            background-color: var(--panel-bg);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        /* Controls */
+        .control-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+
+        input[type=range] {
+            width: 100%;
+            background: transparent;
+            -webkit-appearance: none;
+            margin: 10px 0;
+        }
+
+        input[type=range]:focus {
+            outline: none;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #444;
+            border-radius: 3px;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -5px;
+        }
+
+        .value-display {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--accent-blue);
+            float: right;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+            color: #fff;
+        }
+
+        button#startBtn {
+            background-color: #2e7d32;
+        }
+
+        button#startBtn:hover {
+            background-color: #388e3c;
+        }
+
+        button#pauseBtn {
+            background-color: #f57f17;
+        }
+
+        button#pauseBtn:hover {
+            background-color: #fbc02d;
+            color: #000;
+        }
+
+        button#resetBtn {
+            background-color: #c62828;
+        }
+
+        button#resetBtn:hover {
+            background-color: #d32f2f;
+        }
+
+        button#slowBtn {
+            background-color: #555;
+        }
+
+        button#slowBtn.active {
+            background-color: #8e24aa;
+            box-shadow: 0 0 5px #ba68c8;
+        }
+
+        button#slowBtn:hover {
+            background-color: #666;
+        }
+
+        button#slowBtn.active:hover {
+            background-color: #9c27b0;
+        }
+
+        /* Data Panel */
+        .data-item {
+            margin-bottom: 15px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 8px;
+        }
+
+        .data-label {
+            font-size: 0.85rem;
+            color: #aaa;
+            display: block;
+        }
+
+        .data-value {
+            font-family: var(--font-mono);
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 5px;
+            font-size: 0.8rem;
+        }
+
+        .color-box {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+
+
+        /* Overlay canvas for simulation */
+        #simCanvas {
+            width: 600px;
+            height: 600px;
+            /* box-shadow: 0 0 20px rgba(0,0,0,0.5); */
+            /* Optional glow */
+            border-radius: 50%;
+            /* Just conceptual boundary */
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>Simulación Movimiento Circular Uniformemente Variado (MCUV)</h1>
+        <div style="font-size: 0.8rem; color: #888;">Física Interactiva v1.0</div>
+    </header>
+
+    <div class="main-layout">
+        <!-- Left Panel: Controls -->
+        <div class="panel left-panel">
+            <h3 style="margin-bottom: 20px; border-bottom: 1px solid v(--accent-blue); padding-bottom: 5px;">Controles
+            </h3>
+
+            <div class="control-group">
+                <label>Radio (R) <span id="rVal" class="value-display">5.0 m</span></label>
+                <input type="range" id="radiusInput" min="1" max="10" step="0.1" value="5">
+            </div>
+
+            <div class="control-group">
+                <label>Posición Inicial (&theta;₀) <span id="theta0Val" class="value-display">0°</span></label>
+                <input type="range" id="theta0Input" min="0" max="360" step="1" value="0">
+            </div>
+
+            <div class="control-group">
+                <label>Vel. Angular Inicial (&omega;₀) <span id="w0Val" class="value-display">1.0 rad/s</span></label>
+                <input type="range" id="w0Input" min="-10" max="10" step="0.1" value="1">
+            </div>
+
+            <div class="control-group">
+                <label>Aceleración Angular (&alpha;) <span id="alphaVal" class="value-display">0.5 rad/s²</span></label>
+                <input type="range" id="alphaInput" min="-5" max="5" step="0.1" value="0.5">
+            </div>
+
+            <div class="btn-group">
+                <button id="startBtn">Iniciar</button>
+                <button id="pauseBtn">Pausar</button>
+                <button id="resetBtn">Reset</button>
+            </div>
+            <div class="btn-group" style="margin-top: 10px;">
+                <button id="slowBtn">Cámara Lenta</button>
+            </div>
+
+            <div style="margin-top: 30px; font-size: 0.85rem; color: #888; line-height: 1.4;">
+                <p><strong>Instrucciones:</strong></p>
+                <ul style="padding-left: 20px; margin-top: 5px;">
+                    <li>Ajusta los parámetros con los sliders.</li>
+                    <li>Observa cómo cambian los vectores de velocidad y aceleración.</li>
+                    <li>Usa "Reset" para volver al tiempo t=0.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Center Panel: Simulation -->
+        <div class="center-panel">
+            <canvas id="simCanvas" width="600" height="600"></canvas>
+        </div>
+
+        <!-- Right Panel: Data -->
+        <div class="panel right-panel">
+            <h3 style="margin-bottom: 20px; border-bottom: 1px solid var(--accent-blue); padding-bottom: 5px;">Datos en
+                Tiempo Real</h3>
+
+            <div class="data-item">
+                <span class="data-label">Tiempo (t)</span>
+                <span id="timeDisplay" class="data-value">0.00 s</span>
+            </div>
+
+            <div class="data-item">
+                <span class="data-label">Desplazamiento (&theta;)</span>
+                <span id="thetaDisplay" class="data-value">0.00 rad</span>
+                <div style="font-size: 0.8rem; color: #888;" id="thetaDegDisplay">0.0°</div>
+            </div>
+
+            <div class="data-item">
+                <span class="data-label">Velocidad Angular (&omega;)</span>
+                <span id="omegaDisplay" class="data-value">0.00 rad/s</span>
+            </div>
+
+            <div class="data-item">
+                <span class="data-label" style="color: var(--accent-green);">Velocidad Tangencial (v)</span>
+                <span id="vDisplay" class="data-value" style="color: var(--accent-green);">0.00 m/s</span>
+                <div class="legend-item">
+                    <div class="color-box" style="background: var(--accent-green);"></div> Vector Velocidad
+                </div>
+            </div>
+
+            <div class="data-item">
+                <span class="data-label" style="color: var(--accent-yellow);">Aceleración Total (a)</span>
+                <span id="aTotalDisplay" class="data-value" style="color: var(--accent-yellow);">0.00 m/s²</span>
+                <!-- Legend removed as vector is not drawn -->
+            </div>
+
+            <div class="data-item">
+                <span class="data-label" style="color: var(--accent-blue);">Aceleración Centrípeta (a_c)</span>
+                <span id="acDisplay" class="data-value" style="color: var(--accent-blue);">0.00 m/s²</span>
+                <div class="legend-item">
+                    <div class="color-box" style="background: var(--accent-blue);"></div> Vector A. Centrípeta
+                </div>
+            </div>
+
+            <div class="data-item">
+                <span class="data-label" style="color: var(--accent-red);">Aceleración Tangencial (a_t)</span>
+                <span id="atDisplay" class="data-value" style="color: var(--accent-red);">0.00 m/s²</span>
+                <div class="legend-item">
+                    <div class="color-box" style="background: var(--accent-red);"></div> Vector A. Tangencial
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+
+    <script>
+        // --- Configuration & State ---
+        const config = {
+            radiusScale: 25, // pixels per meter
+            vectorScale: 15, // pixels per unit (m/s or m/s^2) - dynamic adjustments might be needed
+        };
+
+        const state = {
+            running: false,
+            t: 0,
+            dt: 1 / 60, // 60 FPS
+            R: 5.0,
+            theta0: 0, // Initial angle in radians
+            w0: 1.0,
+            alpha: 0.5,
+            theta: 0,
+            omega: 1.0,
+            startTime: 0,
+            lastFrameTime: 0,
+            slowMotion: false
+        };
+
+        // --- DOM Elements ---
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Sliders
+        const radiusInput = document.getElementById('radiusInput');
+        const theta0Input = document.getElementById('theta0Input');
+        const w0Input = document.getElementById('w0Input');
+        const alphaInput = document.getElementById('alphaInput');
+
+        // Displays
+        const rVal = document.getElementById('rVal');
+        const theta0Val = document.getElementById('theta0Val');
+        const w0Val = document.getElementById('w0Val');
+        const alphaVal = document.getElementById('alphaVal');
+
+        const timeDisplay = document.getElementById('timeDisplay');
+        const thetaDisplay = document.getElementById('thetaDisplay');
+        const thetaDegDisplay = document.getElementById('thetaDegDisplay');
+        const omegaDisplay = document.getElementById('omegaDisplay');
+        const vDisplay = document.getElementById('vDisplay');
+        const aTotalDisplay = document.getElementById('aTotalDisplay');
+        const acDisplay = document.getElementById('acDisplay');
+        const atDisplay = document.getElementById('atDisplay');
+
+
+
+        // Buttons
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const slowBtn = document.getElementById('slowBtn');
+
+
+
+        // --- Initialization ---
+        function init() {
+            // Set initial values from DOM
+            updateParams();
+
+            // Event Listeners
+            radiusInput.addEventListener('input', updateParams);
+            theta0Input.addEventListener('input', updateParams);
+            w0Input.addEventListener('input', updateParams);
+            alphaInput.addEventListener('input', updateParams);
+
+            startBtn.addEventListener('click', startSim);
+            pauseBtn.addEventListener('click', pauseSim);
+            resetBtn.addEventListener('click', resetSim);
+            slowBtn.addEventListener('click', toggleSlowMotion);
+
+            // Initial Draw
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            draw();
+        }
+
+        function resizeCanvas() {
+            // Keep canvas pixel logic simple for this demo, 600x600 is fixed in CSS for now
+            // but let's make sure context is clean.
+        }
+
+        function updateParams() {
+            // If simulation is running, we might want to lock these or allow dynamic updates.
+            // For MCUV, changing alpha mid-flight affects future motion. 
+            // Changing R mid-flight is physically weird but visualizing it is fine.
+            // Changing w0 mid-flight usually resets the motion equation, so let's allow alpha/R changes dynamically, 
+            // but w0 should only apply on reset or start (conceptually). 
+            // However, for this sim, let's treat updateParams as updating the *current* parameters.
+
+            state.R = parseFloat(radiusInput.value);
+
+            // Initial Angle (only effective on reset/start or if t=0)
+            const t0Deg = parseFloat(theta0Input.value);
+            const t0Rad = t0Deg * Math.PI / 180;
+
+            // Only update initial conditions if t=0, otherwise we are just changing the "current parameters" 
+            // which might be confusing. For standard MCUV sim, let's just update the stored values
+            // and let them take effect on next step or reset.
+            if (state.t === 0) {
+                state.theta0 = t0Rad;
+                state.theta = state.theta0; // Set current theta to initial
+                state.w0 = parseFloat(w0Input.value);
+                state.omega = state.w0; // Reset current omega
+            }
+            state.alpha = parseFloat(alphaInput.value);
+
+            // Update UI Text
+            rVal.textContent = state.R.toFixed(1) + " m";
+            theta0Val.textContent = t0Deg.toFixed(0) + "°";
+            w0Val.textContent = parseFloat(w0Input.value).toFixed(1) + " rad/s";
+            alphaVal.textContent = state.alpha.toFixed(1) + " rad/s²";
+
+            if (!state.running && state.t === 0) {
+                draw();
+                updateDataPanel();
+            }
+        }
+
+        // --- Simulation Loop ---
+        function startSim() {
+            if (!state.running) {
+                state.running = true;
+                state.lastFrameTime = performance.now();
+                requestAnimationFrame(loop);
+            }
+        }
+
+        function pauseSim() {
+            state.running = false;
+        }
+
+        function resetSim() {
+            state.running = false;
+            state.t = 0;
+
+            // Force update from current slider values
+            const t0Deg = parseFloat(theta0Input.value);
+            state.theta0 = t0Deg * Math.PI / 180;
+            state.theta = state.theta0;
+
+            state.w0 = parseFloat(w0Input.value);
+            state.omega = state.w0; // Reset angular velocity
+
+            // Init alpha
+            state.alpha = parseFloat(alphaInput.value);
+
+            draw();
+            updateDataPanel();
+        }
+
+        function toggleSlowMotion() {
+            state.slowMotion = !state.slowMotion;
+            if (state.slowMotion) {
+                slowBtn.classList.add('active');
+            } else {
+                slowBtn.classList.remove('active');
+            }
+        }
+
+        function loop(timestamp) {
+            if (!state.running) return;
+
+            // Calculate dt
+            let dt = (timestamp - state.lastFrameTime) / 1000;
+            state.lastFrameTime = timestamp;
+
+            // Cap dt to avoid huge jumps
+            let safeDt = Math.min(dt, 0.1);
+
+            // Apply Slow Motion
+            if (state.slowMotion) {
+                safeDt *= 0.2; // 5x slower
+            }
+
+            // Physics Update (Euler)
+            state.t += safeDt;
+            state.omega += state.alpha * safeDt;
+            state.theta += state.omega * safeDt;
+
+            draw();
+            updateDataPanel();
+
+            requestAnimationFrame(loop);
+        }
+
+        // --- Visualization ---
+        function draw() {
+            // Clear background
+            ctx.fillStyle = '#000'; // Pure black for high contrast
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+
+            // Draw Coordinate System (faint)
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(cx, 0); ctx.lineTo(cx, canvas.height);
+            ctx.moveTo(0, cy); ctx.lineTo(canvas.width, cy);
+            ctx.stroke();
+
+            // Scale radius to canvas
+            const pixelRadius = state.R * config.radiusScale;
+
+            // Draw Path (Circle)
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(cx, cy, pixelRadius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Calculate Particle Position
+            // Flip Y axis because canvas Y is down, but physics Y is up.
+            // x = R cos(theta), y = R sin(theta) -> Canvas: y = cy - R sin(theta)
+            const px = cx + pixelRadius * Math.cos(state.theta);
+            const py = cy - pixelRadius * Math.sin(state.theta);
+
+            // Draw Car
+            // Calculate angle for car orientation (tangent to circle)
+            // Velocity direction is correct orientation
+            // v = ( -sin(theta), -cos(theta) ) in canvas coords
+            // atan2(y, x)
+            const carAngle = Math.atan2(-Math.cos(state.theta), -Math.sin(state.theta));
+
+            drawCar(ctx, px, py, carAngle);
+
+            // --- Vectors ---
+            // Need tangential and radial directions
+            // Radial vector (from center to particle): (cos(theta), sin(theta))
+            // Tangential vector (perpendicular, direction of motion): (-sin(theta), cos(theta)) 
+            // Note: For canvas (y down), -sin(theta) corresponds to Y component if moving CCW?
+            // Let's verify standard math: 
+            // Pos: (cos, sin). Deriv: (-sin, cos).
+            // Canvas Y is inverted. y_canvas = -y_physics.
+            // So visually:
+            // P_canvas = (cx + R cos, cy - R sin)
+            // Tangent direction visual: (-sin, -cos) [check: if theta=0 (right), tan is up (0, -1). Correct for CCW]
+
+            const cos = Math.cos(state.theta);
+            const sin = Math.sin(state.theta); // Standard math sin
+
+            // Physics values
+            const v = state.omega * state.R;
+            const ac = state.omega * state.omega * state.R;
+            const at = state.alpha * state.R;
+
+            // Vector Visual Scales (clamped or scaled to be visible but not huge)
+            const vScale = 2.0; // pixels per m/s (reduced to fit max v=100)
+            const acScale = 0.2; // pixels per m/s² (reduced significantly to fit max ac=1000)
+            const atScale = 10.0; // Boosted significantly to make it visible (range 0 to ~50), so this is roughly 10x-50x larger than acScale physics-wise
+
+            // 1. Velocity Vector (Green) - Tangential
+            // Direction: (-sin, cos) in standard xy. In canvas: (-sin, -cos)
+            // Magnitude can be negative if v is negative (CW motion)
+            const vx_px = -sin * v * vScale;
+            const vy_px = -cos * v * vScale;
+
+            drawVector(ctx, px, py, vx_px, vy_px, '#00FF00', 3, "v");
+
+            // 2. Centripetal Acceleration (Blue)
+            const acx_px = -cos * ac * acScale;
+            const acy_px = sin * ac * acScale;
+
+            // 3. Tangential Acceleration (Red)
+            const atx_px = -sin * at * atScale;
+            const aty_px = -cos * at * atScale;
+
+            // 4. Total Acceleration (Yellow)
+            // Vector sum of ac and at (Calculated for potential future use or data, but not drawn)
+            const ax_px = acx_px + atx_px;
+            const ay_px = acy_px + aty_px;
+
+            // Draw Vectors
+            drawVector(ctx, px, py, acx_px, acy_px, '#00BFFF', 2, "ac"); // Normal label placement for ac
+
+            // Tangential Acceleration Label Offset: Ensure it's always on the "Right" side of the car (Outside)
+            // If at >= 0 (Forward vector), Right is Negative Offset (-15).
+            // If at < 0 (Backward vector), Right is Positive Offset (15).
+            const atOffset = (at >= 0) ? -15 : 15;
+            drawVector(ctx, px, py, atx_px, aty_px, '#FF4500', 2, "at", atOffset);
+            // Total acceleration vector removed per user request
+            // drawVector(ctx, px, py, ax_px, ay_px, '#FFD700', 3, "a");
+
+        }
+
+        function drawCar(ctx, x, y, angle) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+
+            // Car dimensions
+            const w = 30; // Length
+            const h = 16; // Width
+
+            // Body (Rectangle)
+            ctx.fillStyle = '#FFEB3B'; // Yellow car
+            ctx.strokeStyle = '#F57F17';
+            ctx.lineWidth = 2;
+
+            // Draw main body centered
+            roundRect(ctx, -w / 2, -h / 2, w, h, 4, true, true);
+
+            // Windshield (Black rect)
+            ctx.fillStyle = '#333';
+            ctx.fillRect(2, -h / 2 + 2, 6, h - 4);
+
+            // Headlights (Yellow/White)
+            ctx.fillStyle = '#FFF';
+            ctx.beginPath();
+            ctx.arc(w / 2 - 1, -h / 4, 2, 0, Math.PI * 2);
+            ctx.arc(w / 2 - 1, h / 4, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Wheels
+            ctx.fillStyle = '#000';
+            // Front Left
+            ctx.fillRect(w / 3, -h / 2 - 2, 8, 3);
+            // Front Right
+            ctx.fillRect(w / 3, h / 2 - 1, 8, 3);
+            // Rear Left
+            ctx.fillRect(-w / 2 + 2, -h / 2 - 2, 8, 3);
+            // Rear Right
+            ctx.fillRect(-w / 2 + 2, h / 2 - 1, 8, 3);
+
+            ctx.restore();
+        }
+
+        function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
+            if (typeof stroke === 'undefined') {
+                stroke = true;
+            }
+            if (typeof radius === 'undefined') {
+                radius = 5;
+            }
+            if (typeof radius === 'number') {
+                radius = { tl: radius, tr: radius, br: radius, bl: radius };
+            } else {
+                var defaultRadius = { tl: 0, tr: 0, br: 0, bl: 0 };
+                for (var side in defaultRadius) {
+                    radius[side] = radius[side] || defaultRadius[side];
+                }
+            }
+            ctx.beginPath();
+            ctx.moveTo(x + radius.tl, y);
+            ctx.lineTo(x + width - radius.tr, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius.tr);
+            ctx.lineTo(x + width, y + height - radius.br);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius.br, y + height);
+            ctx.lineTo(x + radius.bl, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius.bl);
+            ctx.lineTo(x, y + radius.tl);
+            ctx.quadraticCurveTo(x, y, x + radius.tl, y);
+            ctx.closePath();
+            if (fill) {
+                ctx.fill();
+            }
+            if (stroke) {
+                ctx.stroke();
+            }
+
+        }
+
+        function drawVector(ctx, x, y, dx, dy, color, width, label, lateralOffset = 0) {
+            if (Math.abs(dx) < 0.1 && Math.abs(dy) < 0.1) return;
+
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = width;
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + dx, y + dy);
+            ctx.stroke();
+
+            // Arrowhead
+            const headLen = 10;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(x + dx, y + dy);
+            ctx.lineTo(x + dx - headLen * Math.cos(angle - Math.PI / 6), y + dy - headLen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(x + dx - headLen * Math.cos(angle + Math.PI / 6), y + dy - headLen * Math.sin(angle + Math.PI / 6));
+            ctx.moveTo(x + dx, y + dy); // Close tip (optional fill)
+            ctx.fill();
+
+            // Label
+            if (label) {
+                ctx.save();
+                ctx.fillStyle = color;
+                ctx.font = "bold 14px monospace";
+
+                // Calculate position: Tip + Forward Offset + Lateral Offset
+                const forwardOffset = 15;
+
+                // Lateral direction (perpendicular to vector)
+                const latAngle = angle - Math.PI / 2; // -90 deg for "right" side (if y is down, check sign)
+
+                const labelX = x + dx + (Math.cos(angle) * forwardOffset) + (Math.cos(latAngle) * lateralOffset);
+                const labelY = y + dy + (Math.sin(angle) * forwardOffset) + (Math.sin(latAngle) * lateralOffset);
+
+                ctx.fillText(label, labelX, labelY);
+                ctx.restore();
+            }
+        }
+
+        function updateDataPanel() {
+            // Values in SI
+            const v = state.omega * state.R;
+            const ac = state.omega * state.omega * state.R;
+            const at = state.alpha * state.R;
+            const aTotal = Math.sqrt(ac * ac + at * at);
+
+            timeDisplay.textContent = state.t.toFixed(2) + " s";
+            thetaDisplay.textContent = state.theta.toFixed(2) + " rad";
+            const deg = (state.theta * 180 / Math.PI) % 360;
+            thetaDegDisplay.textContent = deg.toFixed(1) + "°";
+
+            omegaDisplay.textContent = state.omega.toFixed(2) + " rad/s";
+            vDisplay.textContent = v.toFixed(2) + " m/s";
+
+            aTotalDisplay.textContent = aTotal.toFixed(2) + " m/s²";
+            acDisplay.textContent = ac.toFixed(2) + " m/s²";
+            atDisplay.textContent = at.toFixed(2) + " m/s²";
+        }
+
+
+
+        // Start
+        init();
+
+    </script>
+
+</body>
+
+</html>

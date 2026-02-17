@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MRU Interactivo</title>
+  <style>
+    body{font-family:Arial,sans-serif;margin:20px;background:#f6f8fc}
+    .wrap{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .card{background:#fff;border:1px solid #d8e0ef;border-radius:10px;padding:12px}
+    svg{width:100%;height:auto;border:1px solid #d8e0ef;background:#fff}
+    button{margin-top:8px;padding:6px 10px}
+    .controls{
+      margin-top:10px;
+      padding:10px;
+      border:1px solid #d8e0ef;
+      border-radius:8px;
+      background:#f9fbff;
+    }
+    .controls-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+      align-items:start;
+      margin-top:6px;
+    }
+    .controls-col{
+      display:flex;
+      flex-direction:column;
+    }
+    .controls label{
+      display:block;
+      margin:4px 0;
+      font-size:13px;
+    }
+    .controls input{
+      width:72px;
+      padding:4px;
+      margin-left:4px;
+    }
+    @media(max-width:900px){.wrap{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <h2>Simulación MRU</h2>
+
+  <div class="wrap">
+    <div class="card">
+      <h3>Posición vs Tiempo (x-t)</h3>
+      <svg id="xt" viewBox="0 0 600 320"></svg>
+      <div><button id="cxt">Limpiar</button></div>
+      <div class="controls">
+        <div><b>Agregar tramo por coordenadas</b></div>
+        <div class="controls-grid">
+          <div class="controls-col">
+            <b>Tiempo (s)</b>
+            <label>t inicial <input id="t1" type="number" min="0" max="20" step="0.1" value="0"></label>
+            <label>t final <input id="t2" type="number" min="0" max="20" step="0.1" value="10"></label>
+          </div>
+          <div class="controls-col">
+            <b>Posición (m)</b>
+            <label>x inicial <input id="x1" type="number" min="-100" max="100" step="0.1" value="-20"></label>
+            <label>x final <input id="x2" type="number" min="-100" max="100" step="0.1" value="40"></label>
+          </div>
+        </div>
+        <div>
+          <button id="addSeg">Agregar tramo</button>
+          <button id="delSeg">Borrar último tramo</button>
+        </div>
+      </div>
+      <p>Velocidad por tramo: <b id="vSeg">--</b></p>
+    </div>
+
+    <div class="card">
+      <h3>Velocidad vs Tiempo (v-t)</h3>
+      <svg id="vt" viewBox="0 0 600 320"></svg>
+      <div><button id="cvt">Limpiar</button></div>
+      <p>Distancia (área): <b id="d">--</b></p>
+      <p>Área por tramo: <b id="dSeg">--</b></p>
+    </div>
+  </div>
+
+<script>
+const NS="http://www.w3.org/2000/svg";
+const M={l:50,r:20,t:20,b:40}, W=600,H=320;
+const XT={tMax:20,yMin:-100,yMax:100,pts:[]}, VT={tMax:20,yMin:-20,yMax:20,tramos:[]};
+
+function d2p(x,y,g){
+  const pw=W-M.l-M.r, ph=H-M.t-M.b;
+  return {
+    x:M.l + x/g.tMax*pw,
+    y:M.t + ph - ((y-g.yMin)/(g.yMax-g.yMin))*ph
+  };
+}
+function p2d(px,py,g){
+  const pw=W-M.l-M.r, ph=H-M.t-M.b;
+  const x=Math.max(0,Math.min(g.tMax,(px-M.l)/pw*g.tMax));
+  const y=Math.max(g.yMin,Math.min(g.yMax,g.yMin+((ph-(py-M.t))/ph)*(g.yMax-g.yMin)));
+  return {x,y};
+}
+function drawGrid(svg,g){
+  svg.innerHTML="";
+  const pw=W-M.l-M.r, ph=H-M.t-M.b;
+  const xStep=1;
+  const yStep=10;
+
+  for(let xv=0; xv<=g.tMax+1e-9; xv+=xStep){
+    const x=M.l + (xv/g.tMax)*pw;
+    let vl=document.createElementNS(NS,"line");
+    vl.setAttribute("x1",x);vl.setAttribute("y1",M.t);vl.setAttribute("x2",x);vl.setAttribute("y2",M.t+ph);vl.setAttribute("stroke","#edf1f8");
+    svg.appendChild(vl);
+
+    const tx=document.createElementNS(NS,"text");
+    tx.setAttribute("x",x);
+    tx.setAttribute("y",H-24);
+    tx.setAttribute("text-anchor","middle");
+    tx.setAttribute("font-size","11");
+    tx.setAttribute("fill","#4a5b73");
+    tx.textContent=xv.toFixed(0);
+    svg.appendChild(tx);
+  }
+
+  for(let yv=g.yMin; yv<=g.yMax+1e-9; yv+=yStep){
+    const y=M.t + ph - ((yv-g.yMin)/(g.yMax-g.yMin))*ph;
+    let hl=document.createElementNS(NS,"line");
+    hl.setAttribute("x1",M.l);hl.setAttribute("y1",y);hl.setAttribute("x2",M.l+pw);hl.setAttribute("y2",y);hl.setAttribute("stroke","#edf1f8");
+    svg.appendChild(hl);
+
+    const ty=document.createElementNS(NS,"text");
+    ty.setAttribute("x",M.l-8);
+    ty.setAttribute("y",y+4);
+    ty.setAttribute("text-anchor","end");
+    ty.setAttribute("font-size","11");
+    ty.setAttribute("fill","#4a5b73");
+    ty.textContent=yv.toFixed(0);
+    svg.appendChild(ty);
+  }
+
+  let xa=document.createElementNS(NS,"line");
+  xa.setAttribute("x1",M.l);xa.setAttribute("y1",M.t+ph);xa.setAttribute("x2",M.l+pw);xa.setAttribute("y2",M.t+ph);xa.setAttribute("stroke","#222");
+  svg.appendChild(xa);
+  let ya=document.createElementNS(NS,"line");
+  ya.setAttribute("x1",M.l);ya.setAttribute("y1",M.t);ya.setAttribute("x2",M.l);ya.setAttribute("y2",M.t+ph);ya.setAttribute("stroke","#222");
+  svg.appendChild(ya);
+
+  const xt=document.createElementNS(NS,"text");
+  xt.setAttribute("x",M.l+pw/2);
+  xt.setAttribute("y",H-8);
+  xt.setAttribute("text-anchor","middle");
+  xt.setAttribute("font-size","12");
+  xt.setAttribute("fill","#263953");
+  xt.textContent="Tiempo (s)";
+  svg.appendChild(xt);
+}
+function drawSeries(svg,g,color,fill){
+  const pts=[...g.pts].sort((a,b)=>a.x-b.x);
+  if(pts.length===0) return pts;
+  if(fill && pts.length>=2){
+    const p0=d2p(pts[0].x,0,g), pn=d2p(pts[pts.length-1].x,0,g);
+    const poly=pts.map(p=>{const q=d2p(p.x,p.y,g);return `${q.x},${q.y}`}).join(" ");
+    const area=document.createElementNS(NS,"polygon");
+    area.setAttribute("points",`${p0.x},${p0.y} ${poly} ${pn.x},${pn.y}`);
+    area.setAttribute("fill","#36b37e55");
+    svg.appendChild(area);
+  }
+  const line=document.createElementNS(NS,"polyline");
+  line.setAttribute("fill","none"); line.setAttribute("stroke",color); line.setAttribute("stroke-width","3");
+  line.setAttribute("points",pts.map(p=>{const q=d2p(p.x,p.y,g);return `${q.x},${q.y}`}).join(" "));
+  svg.appendChild(line);
+  pts.forEach(p=>{const q=d2p(p.x,p.y,g);const c=document.createElementNS(NS,"circle");
+    c.setAttribute("cx",q.x);c.setAttribute("cy",q.y);c.setAttribute("r","4");c.setAttribute("fill",color);svg.appendChild(c);});
+  return pts;
+}
+function areaTrap(pts){
+  if(pts.length<2) return null;
+  let a=0; for(let i=0;i<pts.length-1;i++) a+=((pts[i].y+pts[i+1].y)/2)*(pts[i+1].x-pts[i].x);
+  return a;
+}
+function calcTramosXT(pts){
+  const tramos=[];
+  for(let i=0;i<pts.length-1;i++){
+    const p1=pts[i], p2=pts[i+1];
+    const dt=p2.x-p1.x;
+    if(dt<=0) continue;
+    const v=(p2.y-p1.y)/dt;
+    const area=Math.abs(v*dt);
+    const idx=tramos.length+1;
+    tramos.push({idx,t1:p1.x,t2:p2.x,x1:p1.y,x2:p2.y,v,area});
+  }
+  return tramos;
+}
+function redrawXT(){
+  const s=document.getElementById("xt"); drawGrid(s,XT);
+  const pts=drawSeries(s,XT,"#1f6fff",false);
+
+  const tramos=calcTramosXT(pts);
+  const segs=[];
+  for(const tr of tramos){
+    segs.push(`v${tr.idx}: ${tr.v.toFixed(2)} m/s`);
+
+    const a=d2p(tr.t1,tr.x1,XT), b=d2p(tr.t2,tr.x2,XT);
+    const xm=(a.x+b.x)/2, ym=(a.y+b.y)/2 - 8;
+    const txt=document.createElementNS(NS,"text");
+    txt.setAttribute("x",xm);
+    txt.setAttribute("y",ym);
+    txt.setAttribute("text-anchor","middle");
+    txt.setAttribute("font-size","11");
+    txt.setAttribute("fill","#c1354a");
+    txt.textContent=`${tr.v.toFixed(2)} m/s`;
+    s.appendChild(txt);
+  }
+  document.getElementById("vSeg").textContent=segs.length?segs.join(" | "):"--";
+  VT.tramos=tramos;
+  redrawVT();
+}
+function redrawVT(){
+  const s=document.getElementById("vt");
+  const tramos=VT.tramos||[];
+
+  let yMin=-20, yMax=20;
+  if(tramos.length){
+    const vVals=tramos.map(t=>t.v);
+    const vLo=Math.min(0,...vVals)-10;
+    const vHi=Math.max(0,...vVals)+10;
+    yMin=Math.floor(vLo/10)*10;
+    yMax=Math.ceil(vHi/10)*10;
+    if(yMin===yMax){ yMin-=10; yMax+=10; }
+  }
+  const g={tMax:VT.tMax,yMin,yMax};
+  drawGrid(s,g);
+
+  const areaSeg=[];
+  let total=0;
+  for(const tr of tramos){
+    const b1=d2p(tr.t1,0,g), b2=d2p(tr.t2,0,g);
+    const v1=d2p(tr.t1,tr.v,g), v2=d2p(tr.t2,tr.v,g);
+
+    const poly=document.createElementNS(NS,"polygon");
+    poly.setAttribute("points",`${b1.x},${b1.y} ${v1.x},${v1.y} ${v2.x},${v2.y} ${b2.x},${b2.y}`);
+    poly.setAttribute("fill",tr.v>=0?"#36b37e55":"#e0525255");
+    s.appendChild(poly);
+
+    const line=document.createElementNS(NS,"line");
+    line.setAttribute("x1",v1.x); line.setAttribute("y1",v1.y);
+    line.setAttribute("x2",v2.x); line.setAttribute("y2",v2.y);
+    line.setAttribute("stroke","#0f9d72");
+    line.setAttribute("stroke-width","3");
+    s.appendChild(line);
+
+    const lbl=document.createElementNS(NS,"text");
+    lbl.setAttribute("x",(v1.x+v2.x)/2);
+    lbl.setAttribute("y",v1.y-8);
+    lbl.setAttribute("text-anchor","middle");
+    lbl.setAttribute("font-size","11");
+    lbl.setAttribute("fill","#0f9d72");
+    lbl.textContent=`v=${tr.v.toFixed(2)}`;
+    s.appendChild(lbl);
+
+    total+=tr.area;
+    areaSeg.push(`|Δr${tr.idx}|: ${tr.area.toFixed(2)} m`);
+  }
+
+  document.getElementById("d").textContent=tramos.length?`${total.toFixed(2)} m`:"--";
+  document.getElementById("dSeg").textContent=areaSeg.length?areaSeg.join(" | "):"--";
+}
+function bind(svgId,g,redraw){
+  const svg=document.getElementById(svgId);
+  svg.addEventListener("click",e=>{
+    const b=svg.getBoundingClientRect();
+    const px=(e.clientX-b.left)*(W/b.width), py=(e.clientY-b.top)*(H/b.height);
+    g.pts.push(p2d(px,py,g)); redraw();
+  });
+}
+bind("xt",XT,redrawXT);
+document.getElementById("cxt").onclick=()=>{XT.pts=[];redrawXT();};
+document.getElementById("cvt").onclick=()=>{XT.pts=[];VT.tramos=[];redrawXT();};
+document.getElementById("addSeg").onclick=()=>{
+  const t1=Number(document.getElementById("t1").value);
+  const x1=Number(document.getElementById("x1").value);
+  const t2=Number(document.getElementById("t2").value);
+  const x2=Number(document.getElementById("x2").value);
+
+  if(Number.isNaN(t1)||Number.isNaN(x1)||Number.isNaN(t2)||Number.isNaN(x2)) return;
+  if(t1<0||t1>XT.tMax||t2<0||t2>XT.tMax) return;
+  if(x1<XT.yMin||x1>XT.yMax||x2<XT.yMin||x2>XT.yMax) return;
+  if(t2===t1) return;
+
+  XT.pts.push({x:t1,y:x1});
+  XT.pts.push({x:t2,y:x2});
+  redrawXT();
+};
+document.getElementById("delSeg").onclick=()=>{
+  if(XT.pts.length>=2){
+    XT.pts.pop();
+    XT.pts.pop();
+  }else if(XT.pts.length===1){
+    XT.pts.pop();
+  }
+  redrawXT();
+};
+redrawXT(); redrawVT();
+</script>
+</body>
+</html>
